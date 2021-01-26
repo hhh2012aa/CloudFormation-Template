@@ -1,0 +1,5 @@
+<powershell>
+New-Item -ItemType Directory -Path C:\ -Name AWSPowerShellDemo
+New-Item -ItemType File -Path C:\AWSPowerShellDemo -Name index.html
+Add-Content -Value '<body><h1>Hello World!</h1></body>' -Path C:\AWSPowerShellDemo\index.html -Encoding UTF8
+</powershell>
