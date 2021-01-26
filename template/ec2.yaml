@@ -8,7 +8,6 @@ Metadata:
         Parameters:
           - InstanceType
           - KeyName
-          - VpcID
           - SubnetID
           - SecurityGroupID
 Parameters:
@@ -20,8 +19,6 @@ Parameters:
     Description: WebServer EC2 instance type
     Type: String
     Default: t2.micro
-  VpcID:
-    Type: 'AWS::EC2::VPC::Id'
   SubnetID:
     Type: 'AWS::EC2::Subnet::Id'
   SecurityGroupID:
@@ -33,10 +30,9 @@ Resources:
       KeyName: !Ref KeyName
       ImageId: ami-0f5761c546ea1265a
       InstanceType: !Ref InstanceType
-      VpcId: !Ref VpcID
       SubnetId: !Ref SubnetID
       Monitoring: true
-      SecurityGroupIDs:
+      SecurityGroupIds:
         - !Ref SecurityGroupID
       UserData: !Base64 
       Tags:
