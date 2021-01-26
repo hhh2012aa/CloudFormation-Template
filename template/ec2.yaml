@@ -7,39 +7,38 @@ Metadata:
           default: "EC2 Configuration"
         Parameters:
           - InstanceType
+          - KeyName
           - VpcID
           - SubnetID
           - SecurityGroupID
-          - KeyName
-
-    ParameterLabels:
-      KeyName:
-        Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
-        Type: 'AWS::EC2::KeyPair::KeyName'
-        ConstraintDescription: must be the name of an existing EC2 KeyPair.
-      InstanceType:
-        Description: WebServer EC2 instance type
-        Type: String
-        Default: t2.micro
-      VpcID:
-        Type: 'AWS::EC2::VPC::Id'
-      SubnetID:
-        Type: 'AWS::EC2::Subnet::Id'
-      SecurityGroupID:
-        Type: 'AWS::EC2::SecurityGroup::Id'
+Parameters:
+  KeyName:
+    Default: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+  VpcID:
+    Type: 'AWS::EC2::VPC::Id'
+  SubnetID:
+    Type: 'AWS::EC2::Subnet::Id'
+  SecurityGroupID:
+    Type: 'AWS::EC2::SecurityGroup::Id'
 Resources:
-    myEC2Instance:
-      Type: AWS::EC2::Instance
-      Properties:
-        KeyName: !Ref KeyName
-        ImageId: ami-0f5761c546ea1265a
-        InstanceType: !Ref InstanceType
-        VpcId: !Ref VpcID
-        SubnetId: !Ref SubnetID
-        Monitoring: true
-        SecurityGroupIDs:
-          - !Ref SecurityGroupID
-        UserData: !Base64 
-        Tags:
-          - Key: department
-            Value: IT
+  myEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyName
+      ImageId: ami-0f5761c546ea1265a
+      InstanceType: !Ref InstanceType
+      VpcId: !Ref VpcID
+      SubnetId: !Ref SubnetID
+      Monitoring: true
+      SecurityGroupIDs:
+        - !Ref SecurityGroupID
+      UserData: !Base64 
+      Tags:
+        - Key: department
+          Value: IT
