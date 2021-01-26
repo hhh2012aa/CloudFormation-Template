@@ -1,4 +1,5 @@
 <powershell>
+ New-NetFirewallRule -DisplayName "Name" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8080
 # You Should be able to Copy and Paste this into a powershell terminal and it should just work.
 # To end the loop you have to kill the powershell terminal. ctrl-c wont work :/ 
 
