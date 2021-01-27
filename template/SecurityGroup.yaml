@@ -118,8 +118,6 @@ Resources:
         !Ref Vpc
 
 Outputs:
-  PublicWindowsSecurityGroup:
-    Value: !Ref PublicWindowsSecurityGroup
   DatabaseSecurityGroup:
     Value: !Ref DatabaseSecurityGroup
   EfsSecurityGroup:
@@ -130,3 +128,7 @@ Outputs:
     Value: !Ref PublicAlbSecurityGroup
   WebSecurityGroup:
     Value: !Ref WebSecurityGroup
+  PublicWindowsSecurityGroup:
+    Value: !Ref PublicWindowsSecurityGroup 
+    Export:
+      Name: PublicWindowSG
