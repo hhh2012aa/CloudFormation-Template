@@ -1,57 +1,197 @@
 
+AWSTemplateFormatVersion: 2010-09-09
 
+Description: Reference Architecture to create Application Load Balancer
+
+Metadata:
+
+  Authors:
+    Description: Darryl Osborne (darrylo@amazon.com)
+  License:
+    Description: 'Copyright 2018 Amazon.com, Inc. and its affiliates. All Rights Reserved.
+                  SPDX-License-Identifier: MIT-0'
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: ALB Parameters
+      Parameters:
+        - Vpc
+        - PublicAlbAcmCertificate
+        - PublicAlbSecurityGroup
+        - NumberOfSubnets
+        - Subnet
+    ParameterLabels:
+      Vpc:
+        default: Vpc Id
+      PublicAlbAcmCertificate:
+        default: ALB Certificate ARN
+      PublicAlbSecurityGroup:
+        default: Public ALB Security Group
+      NumberOfSubnets:
+        default: Number of subnets
+      Subnet:
+        default: Subnets
 
 Parameters:
-  SecurityGroups:
-    Type: 
-    Description: 
 
+  NumberOfSubnets:
+    AllowedValues:
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    Default: 2
+    Description: Number of subnets. This must match your selections in the list of subnets below.
+    Type: String 
+  PublicAlbAcmCertificate:
+    AllowedPattern: ^$|(arn:aws:acm:)([a-z0-9/:-])*([a-z0-9])$
+    Description: '[ Optional ] The AWS Certification Manager certificate ARN for the ALB certificate'
+    Type: String
+  PublicAlbSecurityGroup:
+    Description: Select the ALB security group.
+    Type: AWS::EC2::SecurityGroup::Id
+  Subnet:
+    Description: Select existing subnets. The number selected must match the number of subnets above. Subnets selected must be in separate AZs.
+    Type: List<AWS::EC2::Subnet::Id>
+  Vpc:
+    Description: Select an existing Vpc
+    Type: AWS::EC2::VPC::Id
+
+Conditions:
+
+  SslCertificate:
+    !Not [!Equals [ '', !Ref PublicAlbAcmCertificate ] ]
+  NoSslCertificate:
+    !Equals [ '', !Ref PublicAlbAcmCertificate ]
+  NumberOfSubnets1:
+      !Equals [ 1, !Ref NumberOfSubnets ]
+  NumberOfSubnets2:
+      !Equals [ 2, !Ref NumberOfSubnets ]
+  NumberOfSubnets3:
+      !Equals [ 3, !Ref NumberOfSubnets ]
+  NumberOfSubnets4:
+      !Equals [ 4, !Ref NumberOfSubnets ]
+  NumberOfSubnets5:
+      !Equals [ 5, !Ref NumberOfSubnets ]
+  NumberOfSubnets6:
+      !Equals [ 6, !Ref NumberOfSubnets ]
+  Subnet0: !Or
+    - !Condition NumberOfSubnets1
+    - !Condition NumberOfSubnets2
+    - !Condition NumberOfSubnets3
+    - !Condition NumberOfSubnets4
+    - !Condition NumberOfSubnets5
+    - !Condition NumberOfSubnets6
+  Subnet1: !Or
+    - !Condition NumberOfSubnets2
+    - !Condition NumberOfSubnets3
+    - !Condition NumberOfSubnets4
+    - !Condition NumberOfSubnets5
+    - !Condition NumberOfSubnets6
+  Subnet2: !Or
+    - !Condition NumberOfSubnets3
+    - !Condition NumberOfSubnets4
+    - !Condition NumberOfSubnets5
+    - !Condition NumberOfSubnets6
+  Subnet3: !Or
+    - !Condition NumberOfSubnets4
+    - !Condition NumberOfSubnets5
+    - !Condition NumberOfSubnets6
+  Subnet4: !Or
+    - !Condition NumberOfSubnets5
+    - !Condition NumberOfSubnets6
+  Subnet5: !Condition NumberOfSubnets6
 
 Resources:
-  my-elb:
-    Type: AWS::ElasticLoadBalancing::LoadBalancer
+  
+  PublicAlbListenerNoSslCertificate:
+    Type : AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      Scheme: internal
-      SecurityGroups:
-        - sg-id
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref PublicAlbTargetGroup
+      LoadBalancerArn: !Ref PublicApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+  PublicAlbListenerSslCertificate:
+    Condition: SslCertificate
+    Type : AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Certificates:
+      - CertificateArn: !Ref PublicAlbAcmCertificate
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref PublicAlbTargetGroup
+      LoadBalancerArn: !Ref PublicApplicationLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+  PublicApplicationLoadBalancer: 
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
       Subnets:
-        - subnet-id
-      Instances:
-        - instance-id
-      Listeners:
-        - LoadBalancerPort: 80 
-          InstancePort: 80
-          Protocol: HTTP
-          InstanceProtocol: HTTP
-      HealthCheck:
-        Target: TCP:port or HTTPS|HTTP:port/PathToPing
-        HealthyThreshold: 2
-        Interval: 300
-        Timeout: 2
-        UnhealthyThreshold: 2 
-
-  my-tg:
+        !If
+          [ NumberOfSubnets1,
+          [ !Select [ 0, !Ref Subnet ] ],
+          !If
+            [ NumberOfSubnets2,
+            [ !Select [ 0, !Ref Subnet ], !Select [ 1, !Ref Subnet ] ],
+            !If
+              [ NumberOfSubnets3,
+              [ !Select [ 0, !Ref Subnet ], !Select [ 1, !Ref Subnet ], !Select [ 2, !Ref Subnet ] ],
+              !If
+                [ NumberOfSubnets4,
+                [ !Select [ 0, !Ref Subnet ], !Select [ 1, !Ref Subnet ], !Select [ 2, !Ref Subnet ], !Select [ 3, !Ref Subnet ] ],
+                !If
+                  [ NumberOfSubnets5,
+                  [ !Select [ 0, !Ref Subnet ], !Select [ 1, !Ref Subnet ], !Select [ 2, !Ref Subnet ], !Select [ 3, !Ref Subnet ], !Select [ 4, !Ref Subnet ] ],
+                  [ !Select [ 0, !Ref Subnet ], !Select [ 1, !Ref Subnet ], !Select [ 2, !Ref Subnet ], !Select [ 3, !Ref Subnet ], !Select [ 4, !Ref Subnet ], !Select [ 5, !Ref Subnet ] ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+      LoadBalancerAttributes:
+      - Key: idle_timeout.timeout_seconds
+        Value: '60'
+      SecurityGroups:
+      - !Ref PublicAlbSecurityGroup
+      Tags:
+      - Key: Name
+        Value: !Join [ '', [ 'Public ALB / ', !Ref 'AWS::StackName' ] ]
+  PublicAlbTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties: 
-      HealthCheckEnabled: Boolean
-      HealthCheckIntervalSeconds: Integer
-      HealthCheckPath: String
-      HealthCheckPort: String
-      HealthCheckProtocol: String
-      HealthCheckTimeoutSeconds: Integer
-      HealthyThresholdCount: Integer
-      Matcher: 
-        Matcher
-      Name: String
-      Port: Integer
-      Protocol: String
-      Tags: 
-        - Tag
-      TargetGroupAttributes: 
-        - TargetGroupAttribute
-      Targets: 
-        - TargetDescription
-      TargetType: String
-      UnhealthyThresholdCount: Integer
-      VpcId: String
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckTimeoutSeconds: 5
+      Port: 80
+      Protocol: HTTP
+      Tags:
+      - Key: Name
+        Value: !Join [ '', [ 'Public ALB / ', !Ref 'AWS::StackName' ] ]
+      UnhealthyThresholdCount: 5
+      VpcId: !Ref Vpc
 
+Outputs:
+
+  PublicAlbTargetGroupArn:
+    Value:
+      !Ref PublicAlbTargetGroup
+  PublicAlbCanonicalHostedZoneId:
+    Value:
+      !GetAtt PublicApplicationLoadBalancer.CanonicalHostedZoneID
+  PublicAlbDnsName:
+    Value:
+      !GetAtt PublicApplicationLoadBalancer.DNSName
+  PublicAlbFullName:
+    Value:
+      !GetAtt PublicApplicationLoadBalancer.LoadBalancerFullName
+  PublicAlbHostname:
+    Value:
+      !If [ NoSslCertificate, !Join [ '', [ 'http://', !GetAtt PublicApplicationLoadBalancer.DNSName ] ], !Join [ '', [ 'https://', !GetAtt PublicApplicationLoadBalancer.DNSName ] ] ]
+  SslCertificate:
+    Value:
+      !If [ SslCertificate, True, False ]
