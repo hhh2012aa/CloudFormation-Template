@@ -38,10 +38,6 @@ Parameters:
   NumberOfSubnets:
     AllowedValues:
     - 2
-    - 3
-    - 4
-    - 5
-    - 6
     Default: 2
     Description: Number of subnets. This must match your selections in the list of subnets below.
     Type: String 
