@@ -37,7 +37,7 @@ Resources:
       UserData: 
         Fn::Base64: |
           <powershell>
-          # Open 8080 port in Windows Firewall 
+          # Open 80 port in Windows Firewall 
           New-NetFirewallRule -DisplayName "Name" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8080
 
           # You Should be able to Copy and Paste this into a powershell terminal and it should just work.
@@ -47,7 +47,7 @@ Resources:
           $http = [System.Net.HttpListener]::new() 
 
           # Hostname and port to listen on
-          $http.Prefixes.Add("http://*:8080/")
+          $http.Prefixes.Add("http://*:80/")
 
           # Start the Http Server 
           $http.Start()
@@ -89,7 +89,7 @@ Resources:
               }
 
               # ROUTE EXAMPLE 2
-              # http://localhost:8080/some/form'
+              # http://localhost:80/some/form'
               if ($context.Request.HttpMethod -eq 'GET' -and $context.Request.RawUrl -eq '/some/form') {
 
                   # We can log the request to the terminal
@@ -116,7 +116,7 @@ Resources:
               }
 
               # ROUTE EXAMPLE 3
-              # http://localhost:8080/some/post'
+              # http://localhost:80/some/post'
               if ($context.Request.HttpMethod -eq 'POST' -and $context.Request.RawUrl -eq '/some/post') {
 
                   # decode the form post
