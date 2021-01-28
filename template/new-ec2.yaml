@@ -14,3 +14,10 @@ myEC2Instance:
     Tags:
       - Key: key
         Value: value
+    BlockDeviceMappings:
+      - DeviceName: /dev/xvda
+        Ebs:
+          VolumeType: gp2
+          VolumeSize: '30'
+          DeleteOnTermination: 'false'
+          Encrypted: 'true'
