@@ -54,7 +54,7 @@ Paste the sample code of EC2 template including Parameters, Resouce, Output
 
 
 
-Note: the sample code is used in us-east-1, if you want to create stack in other regions, you should replace **ImageId** in ec2 properties, you can [use AWS CLI to search and print the ImageID](https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/finding-an-ami.html))
+Note: the sample code is used in us-east-1, if you want to create stack in other regions, you should replace **ImageId** in ec2 properties, you can [use AWS CLI to search and print the ImageID](https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/finding-an-ami.html)
 
 ```
 
