@@ -101,7 +101,8 @@ Resources:
 Outputs:
   PublicIP: 
     Value: !GetAtt myEC2Instance.PublicIp
-    Export: !Sub ${AWS::StackName}-Public-IP
+    Export: 
+      Name: !Sub '${AWS::StackName}-Public-IP'!Sub ${AWS::StackName}-Public-IP
 ```
 
 
