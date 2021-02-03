@@ -1,0 +1,94 @@
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: EC2 Configuration
+        Parameters:
+          - InstanceType
+          - KeyName
+          - SubnetID
+          - SecurityGroupID
+          - ImageId
+      - Label:
+          default: AD Domain Configuration
+        Parameters:
+          - DomainDNSName
+          - DomainUserName
+          - DomainPassword
+Parameters:
+  KeyName:
+    Default: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+  SubnetID:
+    Type: 'AWS::EC2::Subnet::Id'
+  SecurityGroupID:
+    Type: 'AWS::EC2::SecurityGroup::Id'
+  ImageId:
+    Default: ami-02ad43988184ad42e
+    Type: 'AWS::EC2::Image::Id'
+  DomainDNSName:
+    AllowedPattern: '[a-zA-Z0-9\-]+\..+'
+    Default: example.com
+    Description: >-
+      Fully qualified domain name (FQDN) of the forest root domain e.g.
+      example.com
+    MaxLength: '255'
+    MinLength: '2'
+    Type: String
+  DomainUserName:
+    Description: Domain User Name
+    Type: String
+  DomainPassword:
+    AllowedPattern: >-
+      (?=^.{6,255}$)((?=.*\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*
+    Description: >-
+      Password for the account named above. Must be at least 8 characters
+      containing letters, numbers and symbols
+    MaxLength: '32'
+    MinLength: '8'
+    NoEcho: 'true'
+    Type: String
+Resources:
+  myEC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      KeyName: !Ref KeyName
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref SubnetID
+      Monitoring: true
+      UserData: 
+        Fn::Base64:                              
+          !Sub |
+            <powershell>
+
+            Add-WindowsFeature AD-Domain-Services
+
+            $domain = "${DomainDNSName}"
+
+            $username = "${DomainUserName}" 
+
+            $password = "${DomainPassword}" | ConvertTo-SecureString -asPlainText
+            -Force
+
+            $credential = New-Object
+            System.Management.Automation.PSCredential($username,$password)
+
+            Add-Computer -DomainName $domain -Credential $credential -Restart
+
+            </powershell>
+      SecurityGroupIds:
+        - !Ref SecurityGroupID
+      Tags:
+        - Key: department
+          Value: IT
+Outputs:
+  PublicIP:
+    Value: !GetAtt myEC2Instance.PublicIp
+    Export:
+      Name: !Sub '${AWS::StackName}-Public-IP'
