@@ -1,0 +1,113 @@
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: EC2 Configuration
+        Parameters:
+          - InstanceType
+          - KeyName
+          - SubnetID
+          - SecurityGroupID
+          - ImageId
+
+Parameters:
+  KeyName:
+    Default: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+  SubnetID:
+    Type: 'AWS::EC2::Subnet::Id'
+  SecurityGroupID:
+    Type: 'AWS::EC2::SecurityGroup::Id'
+  ImageId:
+    Default: ami-0e21cbbeef6b1f104
+    Type: 'AWS::EC2::Image::Id'
+  Hostname:
+    Description: Please ensure Name value is between 1 and 15 characters in length and contains only alphanumeric or hyphen characters
+    Type: String
+  DomainCredential:
+    Description: Password for Domain UserData
+    Type: String
+    MinLength: 3
+    MaxLength: 25
+    NoEcho: true
+Resources:
+  myInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles:
+        - ec2-describe-role
+  myEC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          ascending:
+            - NewFile
+            - Rename
+            - JoinDomain
+        NewFile:
+          files:
+            C:\runonce\test1.bat:
+              content: !Sub |
+                echo ' Hello, world1.' 
+            C:\runonce\test2.bat:
+              content: !Sub |
+                echo ' Hello, world2.' 
+
+        Rename:
+          commands:
+            0-restart:
+              command: !Sub >
+                powershell.exe
+                $instanceId = (invoke-webrequest http://169.254.169.254/latest/meta-data/instance-id -UseBasicParsing).content
+                $nameValue = (get-ec2tag -filter @{Name="resource-id";Value=$instanceid},@{Name="key";Value="Name"}).Value
+                $pattern = "^(?![0-9]{1,15}$)[a-zA-Z0-9-]{1,15}$"
+                If ($nameValue -match $pattern) 
+                {Try
+                    {Rename-Computer -NewName $nameValue -ErrorAction Stop -Restart} 
+                  Catch
+                    {$ErrorMessage = $_.Exception.Message
+                    Write-Output "Rename failed: $ErrorMessage"}}
+                Else
+                    {Throw "Provided name not a valid hostname. Please ensure Name value is between 1 and 15 characters in length and contains only alphanumeric or hyphen characters"}
+        JoinDomain:
+          commands: !Sub >
+            powershell.exe
+            Start-Transcript -Path "C:\UserData2.log" -Append
+            $Domain = "xxxx.com"
+            $username = "xxxxxxxxxx" 
+            $credential = New-Object System.Management.Automation.PSCredential($username,${DomainCredential})
+            Add-Computer -DomainName $Domain -Credential $credential -Restart
+            
+
+    Properties:
+      IamInstanceProfile: !Ref myInstanceProfile
+      KeyName: !Ref KeyName
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref SubnetID
+      Monitoring: true
+      SecurityGroupIds:
+        - !Ref SecurityGroupID
+      Tags:
+        - Key: Name
+          Value: !Ref Hostname
+      UserData:
+        'Fn::Base64': !Sub |
+         
+         -
+         <script>
+         echo ${DomainCredential} >> %SystemRoot%\Temp\test.log
+         C:\runonce\test1.bat
+         C:\runonce\test2.bat
+         </script>
+Outputs:
+  PublicIP:
+    Value: !GetAtt myEC2Instance.PublicIp
+    Export:
+      Name: !Sub '${AWS::StackName}-Public-IP'
