@@ -108,6 +108,6 @@ Resources:
          </script>
 Outputs:
   PublicIP:
-    Value: !GetAtt myEC2Instance.PublicIp
+    Value: !GetAtt myEC2Instance.Private-IP
     Export:
-      Name: !Sub '${AWS::StackName}-Public-IP'
+      Name: !Sub '${AWS::StackName}-Private-IP'
